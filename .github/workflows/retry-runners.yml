@@ -1,0 +1,43 @@
+name: Retry unavailable runners
+
+on:
+  workflow_run:
+    workflows: ['Build, test and publish NuGet']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: runner-retry-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    if: >-
+      (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out') &&
+      github.event.workflow_run.run_attempt < 4 &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      # Always use trusted main-branch tooling, never the failing PR's checkout.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Back off before requesting another runner
+        run: sleep 120
+      - name: Retry runner-allocation failures only (up to three retries)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RETRY_REPOSITORY: ${{ github.repository }}
+          RETRY_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: dotnet run --project "$BUILD_TOOL" -c Release -- retry-runners --repository "$RETRY_REPOSITORY" --run-id "$RETRY_RUN_ID"
+        # workflow_run does not inherit the triggering workflow's env.
+        # The project path is local to this trusted checkout.
+    env:
+      BUILD_TOOL: tools/SkyCD.Native.Sqlite2.Build
