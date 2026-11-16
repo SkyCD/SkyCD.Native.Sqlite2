@@ -78,13 +78,10 @@ jobs:
           dotnet format SkyCD.Native.Sqlite2.slnx --verify-no-changes --verbosity minimal
           dotnet build SkyCD.Native.Sqlite2.slnx -c Release --no-restore -warnaserror
           dotnet pack src/SkyCD.Native.Sqlite2 -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
-          dotnet pack "$BUILD_TOOL" -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
           for package in artifacts/nuget/*.nupkg; do
             dotnet run --project "$BUILD_TOOL" -c Release --no-build -- verify-package --package "$package"
           done
           dotnet run --project "$BUILD_TOOL" -c Release --no-build -- check-licenses --sbom native-sbom.json --policy dependency-license-policy.json --report artifacts/native-license-report.json
-          dotnet tool install SkyCD.Native.Sqlite2.Build --tool-path artifacts/installed-tool --version "$PACKAGE_VERSION" --add-source "$PWD/artifacts/nuget"
-          artifacts/installed-tool/sqlite2-build verify-package --package "artifacts/nuget/SkyCD.Native.Sqlite2.$PACKAGE_VERSION.nupkg"
           if [ -n "$(git ls-files '*.zip' '*.ps1')" ]; then
             echo "Source ZIPs and PowerShell helpers must not be tracked."
             exit 1
@@ -137,9 +134,26 @@ jobs:
           TEST_FRAMEWORK: ${{ matrix.framework }}
         run: dotnet run --project "$BUILD_TOOL" -c Release --no-build -- smoke-package --version "$PACKAGE_VERSION" --rid "$TEST_RID" --framework "$TEST_FRAMEWORK" --feed artifacts/nuget
 
+  required-checks:
+    name: Required checks
+    if: always()
+    needs: [discover, build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require build, licenses and every matrix test to pass
+        env:
+          DISCOVERY: ${{ needs.discover.result }}
+          BUILD: ${{ needs.build.result }}
+          TESTS: ${{ needs.test.result }}
+          EVENT: ${{ github.event_name }}
+          UNRELEASED: ${{ needs.discover.outputs.unreleased }}
+        run: |
+          if [ "$EVENT" = schedule ] && [ "$UNRELEASED" = false ] && [ "$DISCOVERY" = success ]; then exit 0; fi
+          test "$DISCOVERY" = success && test "$BUILD" = success && test "$TESTS" = success
+
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: [build, test]
+    needs: [build, test, required-checks]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -152,10 +166,10 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-      - name: Publish library and local tool to SkyCD GitHub Packages
+      - name: Publish library to SkyCD GitHub Packages
         env:
           PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: dotnet nuget push 'artifacts/nuget/*.nupkg' --source https://nuget.pkg.github.com/SkyCD/index.json --api-key "$PACKAGE_TOKEN" --skip-duplicate
+        run: dotnet nuget push 'artifacts/nuget/SkyCD.Native.Sqlite2.*.nupkg' --source https://nuget.pkg.github.com/SkyCD/index.json --api-key "$PACKAGE_TOKEN" --skip-duplicate
 
   readme:
     if: github.ref == 'refs/heads/main'

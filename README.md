@@ -91,14 +91,11 @@ The wrapper, build tools and synthetic fixtures use the [MIT license](LICENSE). 
 
 ## Local .NET build tool
 
-The helpers are a packaged .NET local tool, `SkyCD.Native.Sqlite2.Build`, from the same GitHub Packages feed. There are no PowerShell helper scripts in this repository. After configuring feed authentication, install the published tool into a local manifest:
+The repository includes a .NET build tool for contributors. Run it from the repository root:
 
 ```sh
-dotnet new tool-manifest
-dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.11
-dotnet tool run sqlite2-build -- native-build --zig /path/to/zig
-dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.11.nupkg
-dotnet tool run sqlite2-build -- check-licenses --sbom native-sbom.json --policy dependency-license-policy.json --report artifacts/license-report.json
+dotnet run --project tools/SkyCD.Native.Sqlite2.Build -- native-build --zig /path/to/zig
+dotnet run --project tools/SkyCD.Native.Sqlite2.Build -- verify-package --package /path/to/package.nupkg
 ```
 
-Before the first package is installed, bootstrap any command with `dotnet run --project tools/SkyCD.Native.Sqlite2.Build -- <command>`. `smoke-package` restores and RID-publishes a real package consumer; `generate-readme` expands this document from `README.template.md`. Edit the template, not the generated README. On each main-branch push, CI fills the bundled SQLite and CI package versions, embeds the generated document in the packages, and commits it back after publication without starting a workflow loop. Automated commits include the requested coauthor trailer.
+To change this README, edit `README.template.md`; CI generates the published copy. Only the library is published to GitHub Packages.
