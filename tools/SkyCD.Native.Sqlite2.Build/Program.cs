@@ -22,7 +22,8 @@ try
         case "smoke-package": await PackageSmoke.Run(root, Required("--version"), Required("--rid"), Required("--feed"), options.GetValueOrDefault("--framework", "net10.0")); break;
         case "release-matrix": await ReleaseMatrix.Run(Required("--output")); break;
         case "retry-runners": await RunnerRetry.Run(Required("--repository"), Required("--run-id")); break;
-        case "generate-readme": ReadmeGenerator.Run(root, Required("--version"), options.GetValueOrDefault("--frameworks")); break;
+        case "generate-readme": ReadmeGenerator.Run(root, Required("--version"), options.GetValueOrDefault("--frameworks") is "published" ? ReadmeGenerator.PublishedFrameworks(root) : options.GetValueOrDefault("--frameworks")); break;
+        case "classify-changes": await ChangeClassifier.Run(Required("--base"), Required("--head"), Required("--output")); break;
         default: throw new BuildToolException($"unknown command {args[0]}");
     }
     return 0;

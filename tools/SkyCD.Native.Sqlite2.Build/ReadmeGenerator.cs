@@ -6,6 +6,13 @@ namespace SkyCD.Native.Sqlite2.Build;
 
 internal static class ReadmeGenerator
 {
+    internal static string PublishedFrameworks(string root)
+    {
+        var badge = Regex.Match(File.ReadAllText(Path.Combine(root, "README.md")), @"label=\.NET&message=([^&\s)]+)");
+        if (!badge.Success) throw new BuildToolException("published .NET badge was not found");
+        return string.Join(';', Uri.UnescapeDataString(badge.Groups[1].Value).Split('|').Select(version => "net" + version.Trim()));
+    }
+
     internal static void Run(string root, string version, string? frameworks = null)
     {
         if (!Regex.IsMatch(version, @"^[0-9A-Za-z.\-]+$")) throw new BuildToolException("invalid README package version");

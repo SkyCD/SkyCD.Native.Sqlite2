@@ -43,7 +43,7 @@ jobs:
           PUBLISH_RUN_ID: ${{ inputs.run-id }}
         run: |
           set -euo pipefail
-          [[ "$PACKAGE_VERSION" =~ ^0\.1\.[0-9]+\.[0-9]+$ ]]
+          [[ "$PACKAGE_VERSION" =~ ^0\.1\.[0-9]+\.[0-9]+$ || "$PACKAGE_VERSION" =~ ^docs-[0-9]+$ ]]
           test "$UPDATE_BRANCH" = "automation/readme-${PACKAGE_VERSION}"
           number=$(gh pr list --head "$UPDATE_BRANCH" --base main --state open --json number --jq '.[0].number')
           pr=$(gh api "repos/$GH_REPO/pulls/$number")
@@ -56,10 +56,17 @@ jobs:
           run=$(gh api "repos/$GH_REPO/actions/runs/$PUBLISH_RUN_ID")
           jq -e '.head_branch == "main" and .event != "pull_request" and .path == ".github/workflows/ci.yml"' <<< "$run" > /dev/null
           jobs=$(gh api "repos/$GH_REPO/actions/runs/$PUBLISH_RUN_ID/jobs?per_page=100")
-          jq -e '[.jobs[] | select(.name == "publish" or .name == "Required checks") | .conclusion] == ["success", "success"]' <<< "$jobs" > /dev/null
+          if [[ "$PACKAGE_VERSION" == docs-* ]]; then
+            test "$PACKAGE_VERSION" = "docs-${PUBLISH_RUN_ID}"
+            jq -e '[.jobs[] | select(.name == "docs" or .name == "Required checks") | .conclusion] == ["success", "success"]' <<< "$jobs" > /dev/null
+          else
+            jq -e '[.jobs[] | select(.name == "publish" or .name == "Required checks") | .conclusion] == ["success", "success"]' <<< "$jobs" > /dev/null
+          fi
           gh run download "$PUBLISH_RUN_ID" --name generated-readme --dir expected
-          gh run download "$PUBLISH_RUN_ID" --name nuget-package --dir package
-          dotnet run --project tools/SkyCD.Native.Sqlite2.Build -c Release -- verify-package --package "package/SkyCD.Native.Sqlite2.${PACKAGE_VERSION}.nupkg" --version "$PACKAGE_VERSION"
+          if [[ "$PACKAGE_VERSION" != docs-* ]]; then
+            gh run download "$PUBLISH_RUN_ID" --name nuget-package --dir package
+            dotnet run --project tools/SkyCD.Native.Sqlite2.Build -c Release -- verify-package --package "package/SkyCD.Native.Sqlite2.${PACKAGE_VERSION}.nupkg" --version "$PACKAGE_VERSION"
+          fi
           gh api "repos/$GH_REPO/contents/README.md?ref=$sha" --jq .content | base64 --decode > actual.md
           cmp expected/README.md actual.md
           # Attach the required result to the PR's commit, rather than the dispatch's main commit.
@@ -85,5 +92,7 @@ jobs:
           set -euo pipefail
           gh api "repos/$GH_REPO/check-runs" -f name='Required checks' -f head_sha="$VERIFIED_SHA" -f status=completed -f conclusion=success --silent
           gh pr merge "$PR_NUMBER" --squash --match-head-commit "$VERIFIED_SHA"
-          merged_sha=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq .merge_commit_sha)
-          gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/v${PACKAGE_VERSION}" -f sha="$merged_sha" --silent
+          if [[ "$PACKAGE_VERSION" != docs-* ]]; then
+            merged_sha=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq .merge_commit_sha)
+            gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/v${PACKAGE_VERSION}" -f sha="$merged_sha" --silent
+          fi
