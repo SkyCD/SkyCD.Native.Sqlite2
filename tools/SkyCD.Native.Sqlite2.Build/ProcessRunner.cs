@@ -4,9 +4,10 @@ namespace SkyCD.Native.Sqlite2.Build;
 
 internal static class ProcessRunner
 {
-    internal static async Task<string> Run(string executable, IEnumerable<string> arguments, bool capture = false)
+    internal static async Task<string> Run(string executable, IEnumerable<string> arguments, bool capture = false, string? workingDirectory = null)
     {
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, RedirectStandardOutput = capture };
+        if (workingDirectory is not null) start.WorkingDirectory = workingDirectory;
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         using var process = Process.Start(start) ?? throw new BuildToolException($"cannot start {executable}");
         var output = capture ? await process.StandardOutput.ReadToEndAsync() : "";

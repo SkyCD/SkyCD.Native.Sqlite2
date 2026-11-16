@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '17 6 16 3,7,11 *'
 
 permissions:
   contents: read
@@ -17,16 +19,40 @@ env:
   BUILD_TOOL: tools/SkyCD.Native.Sqlite2.Build
 
 jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.releases.outputs.matrix }}
+      frameworks: ${{ steps.releases.outputs.frameworks }}
+      latest: ${{ steps.releases.outputs.latest }}
+      unreleased: ${{ steps.releases.outputs.unreleased }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Discover all stable .NET releases from 8 onward
+        id: releases
+        run: dotnet run --project "$BUILD_TOOL" -c Release -- release-matrix --output "$GITHUB_OUTPUT"
+
   build:
+    needs: discover
+    if: github.event_name != 'schedule' || needs.discover.outputs.unreleased == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
       version: ${{ steps.version.outputs.value }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: recursive
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            ${{ needs.discover.outputs.latest }}
       - name: CI package version
         id: version
         run: echo "value=0.1.0-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
@@ -45,11 +71,12 @@ jobs:
       - name: Restore, format, build and pack
         env:
           PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+          LIBRARY_FRAMEWORKS: ${{ needs.discover.outputs.frameworks }}
         run: |
           dotnet restore SkyCD.Native.Sqlite2.slnx
           dotnet format SkyCD.Native.Sqlite2.slnx --verify-no-changes --verbosity minimal
           dotnet build SkyCD.Native.Sqlite2.slnx -c Release --no-restore -warnaserror
-          dotnet pack src/SkyCD.Native.Sqlite2 -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
+          dotnet pack src/SkyCD.Native.Sqlite2 -c Release -p:TargetFrameworks="${LIBRARY_FRAMEWORKS//;/%3B}" -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
           dotnet pack "$BUILD_TOOL" -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
           for package in artifacts/nuget/*.nupkg; do
             dotnet run --project "$BUILD_TOOL" -c Release --no-build -- verify-package --package "$package"
@@ -77,26 +104,19 @@ jobs:
           path: README.md
 
   test:
-    needs: build
+    needs: [discover, build]
     timeout-minutes: 20
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            rid: linux-x64
-          - os: windows-latest
-            rid: win-x64
-          - os: macos-15
-            rid: osx-arm64
-          - os: macos-15-intel
-            rid: osx-x64
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            ${{ matrix.sdk }}
       - uses: actions/download-artifact@v8
         with:
           name: native-assets
@@ -113,7 +133,8 @@ jobs:
         env:
           PACKAGE_VERSION: ${{ needs.build.outputs.version }}
           TEST_RID: ${{ matrix.rid }}
-        run: dotnet run --project "$BUILD_TOOL" -c Release --no-build -- smoke-package --version "$PACKAGE_VERSION" --rid "$TEST_RID" --feed artifacts/nuget
+          TEST_FRAMEWORK: ${{ matrix.framework }}
+        run: dotnet run --project "$BUILD_TOOL" -c Release --no-build -- smoke-package --version "$PACKAGE_VERSION" --rid "$TEST_RID" --framework "$TEST_FRAMEWORK" --feed artifacts/nuget
 
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -150,10 +171,15 @@ jobs:
           name: generated-readme
           path: .
       - name: Commit generated README without a workflow loop
+        env:
+          PACKAGE_VERSION: ${{ needs.build.outputs.version }}
         run: |
-          if git diff --quiet -- README.md; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add README.md
-          git commit -m '[489] Update generated README [skip ci]' -m 'Co-authored-by: OpenAI Codex <codex@openai.com>'
+          if ! git diff --cached --quiet; then
+            git commit -m '[489] Update generated README [skip ci]' -m 'Co-authored-by: OpenAI Codex <codex@openai.com>'
+          fi
+          git tag "v${PACKAGE_VERSION}"
           git push origin main
+          git push origin "v${PACKAGE_VERSION}"

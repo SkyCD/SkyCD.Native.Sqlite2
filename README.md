@@ -1,7 +1,7 @@
 [![Build, test and publish](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml/badge.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/LICENSE)
 [![Bundled SQLite](https://img.shields.io/badge/bundled_SQLite-2.8.17-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/native-source.json)
-[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.3&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
+[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.4&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
 
 # SkyCD.Native.Sqlite2
 
@@ -55,6 +55,7 @@ The wrapper targets .NET 10 and currently bundles:
 | Runtime | Native library | Minimum platform |
 | --- | --- | --- |
 | win-x64 | skycd_sqlite2.dll | Windows x64 |
+| win-arm64 | skycd_sqlite2.dll | Windows ARM64 |
 | linux-x64 | libskycd_sqlite2.so | glibc 2.17 |
 | osx-x64 | libskycd_sqlite2.dylib | macOS 10.13 |
 | osx-arm64 | libskycd_sqlite2.dylib | macOS 11 |
@@ -70,6 +71,7 @@ Limits are 256 MiB input, 16 MiB decoded records, 128 table columns, one million
 Install the .NET 10 SDK and [Zig 0.15.2](https://ziglang.org/download/0.15.2/), then run:
 
 ```powershell
+git submodule update --init --recursive
 dotnet run --project tools/SkyCD.Native.Sqlite2.Build -- native-build --zig /path/to/zig
 dotnet restore SkyCD.Native.Sqlite2.slnx
 dotnet format SkyCD.Native.Sqlite2.slnx --verify-no-changes
@@ -78,11 +80,15 @@ dotnet test SkyCD.Native.Sqlite2.slnx -c Release --no-build
 dotnet pack src/SkyCD.Native.Sqlite2 -c Release -o artifacts/nuget
 ```
 
-The .NET local tool downloads the official [SQLite 2.8.17 generated sources](https://www.sqlite.org/sqlite-source-2_8_17.zip) into a unique temporary directory, verifies SHA-256 `e718e71fec6ff3757a01c46ec505661a76843e5bbce0327d12497176ad5add49`, compiles the four runtimes, and deletes the temporary source directory. **The upstream source ZIP is neither committed nor included in the NuGet package or workflow artifacts.** Generated native binaries and manifests are also excluded from Git.
+SQLite comes from the official [SQLite Git mirror](https://github.com/sqlite/sqlite) as the `upstream/sqlite` Git submodule, pinned to tag `version-2.8.17` and its exact commit in `native-source.json`. The .NET build tool verifies that commit and rejects modified tracked source, copies the library sources to a temporary directory, generates the parser with upstream Lemon, and compiles all five native runtimes. It leaves the submodule unchanged. **No SQLite source ZIP is downloaded, committed, or included in packages or workflow artifacts.** Generated native binaries and manifests are also excluded from Git.
 
 The engine remains pinned for reproducibility. The build applies explicit 64-bit pointer/modern MinGW compatibility changes and small native `initPage` guards for cyclic ancestors, depth overflow and cell-array bounds, demonstrated necessary by malformed-file tests. The .NET tool contains the complete transformations. No GPL implementation is copied. Windows CRT section sentinels and its no-op DLL callback are supplied by this project under MIT, avoiding unmarked default startup units.
 
-CI builds the native assets, verifies formatting and package contents, and tests both the wrapper and the actual RID-published NuGet package on Windows, Linux, Intel macOS and ARM macOS. Publishing to GitHub Packages happens only for `main`, after every platform test passes, using the workflow's `GITHUB_TOKEN`. Pushes and manual runs generate new CI package versions automatically.
+CI reads Microsoft's official .NET release index on every build and automatically targets every stable major release from .NET 8 through the latest, excluding previews. The NuGet package includes an assembly for each discovered target. Each target is tested with an actual RID-published package on Windows x64, Windows ARM64, Linux x64, Intel macOS and ARM macOS. Dependabot checks Actions and NuGet dependencies monthly; its update PRs run the same discovery, so newly released .NET versions join those builds automatically. Build tooling itself requires .NET 10.
+
+Publishing to GitHub Packages happens only for `main`, after every platform and .NET target passes, using the workflow's `GITHUB_TOKEN`. Pushes and manual runs generate new CI package versions automatically. CI then regenerates this README from `README.template.md`, updating the package and bundled SQLite badges, commits it without triggering another build, and tags the released commit as `v<package-version>`.
+
+A scheduled check runs every four months (March 16, July 16 and November 16). It compares `main` against the latest reachable release tag and builds/releases only when commits remain untagged. A new .NET release alone does not force a scheduled release without new commits.
 
 ## License
 
@@ -94,9 +100,9 @@ The helpers are a packaged .NET local tool, `SkyCD.Native.Sqlite2.Build`, from t
 
 ```sh
 dotnet new tool-manifest
-dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.3
+dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.4
 dotnet tool run sqlite2-build -- native-build --zig /path/to/zig
-dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.3.nupkg
+dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.4.nupkg
 dotnet tool run sqlite2-build -- check-licenses --sbom native-sbom.json --policy dependency-license-policy.json --report artifacts/license-report.json
 ```
 

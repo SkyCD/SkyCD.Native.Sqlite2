@@ -1,4 +1,3 @@
-using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 
@@ -18,15 +17,7 @@ internal static class NativeBuilder
         Directory.CreateDirectory(work);
         try
         {
-            var archive = Path.Combine(work, "source.zip");
-            using (var http = new HttpClient())
-            using (var stream = await http.GetStreamAsync(source.GetProperty("url").GetString()!))
-            using (var target = File.Create(archive))
-                await stream.CopyToAsync(target);
-            using (var file = File.OpenRead(archive))
-                if (Convert.ToHexStringLower(await SHA256.HashDataAsync(file)) != source.GetProperty("sha256").GetString())
-                    throw new BuildToolException("upstream source archive checksum mismatch");
-            ZipFile.ExtractToDirectory(archive, work);
+            await SourcePreparer.Run(root, work, zig, source);
             File.WriteAllText(Path.Combine(work, "config.h"), "#define SQLITE_PTR_SZ 8\n");
             var osHeader = Path.Combine(work, "os.h");
             var osText = File.ReadAllText(osHeader);
@@ -39,11 +30,12 @@ internal static class NativeBuilder
             var sources = Directory.GetFiles(work, "*.c").Where(p => Path.GetFileName(p) is not ("shell.c" or "tclsqlite.c")).Order(StringComparer.Ordinal).ToArray();
             var exports = Path.Combine(work, "exports.def");
             File.WriteAllText(exports, "EXPORTS\nsqlite_open\nsqlite_close\nsqlite_compile\nsqlite_step\nsqlite_finalize\nsqlite_freemem\nsqlite_set_authorizer\nsqlite_progress_handler\nsqlite_libversion\n");
-            foreach (var rid in (runtimes ?? "win-x64,linux-x64,osx-x64,osx-arm64").Split(','))
+            foreach (var rid in (runtimes ?? "win-x64,win-arm64,linux-x64,osx-x64,osx-arm64").Split(','))
             {
                 var target = rid switch
                 {
                     "win-x64" => "x86_64-windows-gnu",
+                    "win-arm64" => "aarch64-windows-gnu",
                     "linux-x64" => "x86_64-linux-gnu.2.17",
                     "osx-x64" => "x86_64-macos.10.13",
                     "osx-arm64" => "aarch64-macos.11.0",

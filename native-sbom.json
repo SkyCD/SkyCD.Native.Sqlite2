@@ -16,14 +16,8 @@
       ],
       "externalReferences": [
         {
-          "type": "distribution",
-          "url": "https://www.sqlite.org/sqlite-source-2_8_17.zip"
-        }
-      ],
-      "hashes": [
-        {
-          "alg": "SHA-256",
-          "content": "e718e71fec6ff3757a01c46ec505661a76843e5bbce0327d12497176ad5add49"
+          "type": "vcs",
+          "url": "https://github.com/sqlite/sqlite/commit/a34b0794e03780b6b8d947097e53721cd510d270"
         }
       ]
     },

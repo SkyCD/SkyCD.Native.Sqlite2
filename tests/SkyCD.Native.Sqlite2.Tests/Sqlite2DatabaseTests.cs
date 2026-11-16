@@ -26,7 +26,7 @@ public sealed class Sqlite2DatabaseTests
     public void BundledLibraries_MatchRecordedHashes()
     {
         using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "sqlite2-sha256.json")));
-        Assert.Equal(4, manifest.RootElement.EnumerateObject().Count());
+        Assert.Equal(5, manifest.RootElement.EnumerateObject().Count());
         foreach (var entry in manifest.RootElement.EnumerateObject())
         {
             var path = Path.Combine(AppContext.BaseDirectory, entry.Name.Replace('/', Path.DirectorySeparatorChar));

@@ -1,0 +1,3 @@
+[submodule "upstream/sqlite"]
+	path = upstream/sqlite
+	url = https://github.com/sqlite/sqlite.git
