@@ -16,7 +16,8 @@ try
     switch (args[0])
     {
         case "native-build": await NativeBuilder.Run(root, Required("--zig"), options.GetValueOrDefault("--runtime"), options.GetValueOrDefault("--output-root")); break;
-        case "verify-package": PackageVerifier.Run(Required("--package")); break;
+        case "verify-package": PackageVerifier.Run(Required("--package"), options.GetValueOrDefault("--version")); break;
+        case "release-version": await ReleaseVersion.Run(root, Required("--output")); break;
         case "check-licenses": return LicenseChecker.Run(Required("--sbom"), Required("--policy"), Required("--report"));
         case "smoke-package": await PackageSmoke.Run(root, Required("--version"), Required("--rid"), Required("--feed"), options.GetValueOrDefault("--framework", "net10.0")); break;
         case "release-matrix": await ReleaseMatrix.Run(Required("--output")); break;

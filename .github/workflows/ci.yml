@@ -39,6 +39,9 @@ jobs:
 
   build:
     needs: discover
+    permissions:
+      contents: read
+      packages: read
     if: github.event_name != 'schedule' || needs.discover.outputs.unreleased == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -48,14 +51,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             10.0.x
             ${{ needs.discover.outputs.latest }}
-      - name: CI package version
+      - name: Next release version from published versions and the SQLite submodule
         id: version
-        run: echo "value=0.1.0-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet run --project "$BUILD_TOOL" -c Release -- release-version --output "$GITHUB_OUTPUT"
       - name: Install pinned Zig compiler
         run: |
           curl -L --fail --silent --show-error https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz -o "$RUNNER_TEMP/zig.tar.xz"
