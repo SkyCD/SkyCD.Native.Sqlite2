@@ -19,7 +19,49 @@ env:
   BUILD_TOOL: tools/SkyCD.Native.Sqlite2.Build
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Classify changed files
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [[ "$EVENT" != push && "$EVENT" != pull_request ]] || [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            echo 'code=true' >> "$GITHUB_OUTPUT"
+          else
+            dotnet run --project "$BUILD_TOOL" -c Release -- classify-changes --base "$BASE_SHA" --head "$HEAD_SHA" --output "$GITHUB_OUTPUT"
+          fi
+
+  docs:
+    needs: changes
+    if: needs.changes.outputs.code == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Regenerate README using the published framework list
+        run: dotnet run --project "$BUILD_TOOL" -c Release -- generate-readme --version docs-${{ github.run_id }} --frameworks published
+      - uses: actions/upload-artifact@v7
+        with:
+          name: generated-readme
+          path: README.md
+
   discover:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.releases.outputs.matrix }}
@@ -38,11 +80,11 @@ jobs:
         run: dotnet run --project "$BUILD_TOOL" -c Release -- release-matrix --output "$GITHUB_OUTPUT"
 
   build:
-    needs: discover
+    needs: [changes, discover]
     permissions:
       contents: read
       packages: read
-    if: github.event_name != 'schedule' || needs.discover.outputs.unreleased == 'true'
+    if: needs.changes.outputs.code == 'true' && (github.event_name != 'schedule' || needs.discover.outputs.unreleased == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -143,7 +185,7 @@ jobs:
   required-checks:
     name: Required checks
     if: always()
-    needs: [discover, build, test]
+    needs: [changes, docs, discover, build, test]
     runs-on: ubuntu-latest
     steps:
       - name: Require build, licenses and every matrix test to pass
@@ -153,7 +195,12 @@ jobs:
           TESTS: ${{ needs.test.result }}
           EVENT: ${{ github.event_name }}
           UNRELEASED: ${{ needs.discover.outputs.unreleased }}
+          CHANGES: ${{ needs.changes.result }}
+          CODE_CHANGES: ${{ needs.changes.outputs.code }}
+          DOCS: ${{ needs.docs.result }}
         run: |
+          test "$CHANGES" = success || exit 1
+          if [ "$CODE_CHANGES" = false ]; then test "$DOCS" = success; exit $?; fi
           if [ "$EVENT" = schedule ] && [ "$UNRELEASED" = false ] && [ "$DISCOVERY" = success ]; then exit 0; fi
           test "$DISCOVERY" = success && test "$BUILD" = success && test "$TESTS" = success
 
@@ -178,8 +225,8 @@ jobs:
         run: dotnet nuget push 'artifacts/nuget/SkyCD.Native.Sqlite2.*.nupkg' --source https://nuget.pkg.github.com/SkyCD/index.json --api-key "$PACKAGE_TOKEN" --skip-duplicate
 
   readme:
-    if: github.ref == 'refs/heads/main'
-    needs: [build, publish]
+    if: always() && github.ref == 'refs/heads/main' && needs.required-checks.result == 'success' && (needs.publish.result == 'success' || needs.docs.result == 'success')
+    needs: [build, publish, docs, required-checks]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -195,15 +242,17 @@ jobs:
           path: .
       - name: Open a generated README update PR
         env:
-          PACKAGE_VERSION: ${{ needs.build.outputs.version }}
+          PACKAGE_VERSION: ${{ needs.build.outputs.version || format('docs-{0}', github.run_id) }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           if git diff --quiet -- README.md; then
-            git tag "v${PACKAGE_VERSION}"
-            git push origin "v${PACKAGE_VERSION}"
+            if [[ "$PACKAGE_VERSION" != docs-* ]]; then
+              git tag "v${PACKAGE_VERSION}"
+              git push origin "v${PACKAGE_VERSION}"
+            fi
             exit 0
           fi
           branch="automation/readme-${PACKAGE_VERSION}"
@@ -211,5 +260,5 @@ jobs:
           git add README.md
           git commit -m '[489] Update generated README' -m 'Co-authored-by: OpenAI Codex <codex@openai.com>'
           git push origin "$branch"
-          gh pr create --base main --head "$branch" --title '[489] Update generated README' --body 'Refresh the generated README for the published package. This PR is verified against the trusted template before automatic merge.'
+          gh pr create --base main --head "$branch" --title '[489] Update generated README' --body 'Refresh the generated README. This PR is verified against the successful build artifact before automatic merge.'
           gh workflow run readme-update.yml --ref main -f branch="$branch" -f version="$PACKAGE_VERSION" -f run-id="${{ github.run_id }}"

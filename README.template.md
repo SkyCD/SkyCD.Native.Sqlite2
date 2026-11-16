@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/LICENSE)
 [![Bundled SQLite](https://img.shields.io/badge/bundled_SQLite-{{SQLITE_VERSION}}-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/native-source.json)
 [![Supported .NET versions](https://img.shields.io/static/v1?label=.NET&message={{DOTNET_VERSIONS}}&color=512BD4)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml)
-[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message={{PACKAGE_VERSION}}&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
+[![NuGet package](https://img.shields.io/github/v/tag/SkyCD/SkyCD.Native.Sqlite2?label=NuGet&sort=date&include_prereleases&filter=v0.1.*)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
 
 # SkyCD.Native.Sqlite2
 
@@ -16,7 +16,7 @@ It is intended for reading and migrating old catalogs, backups, and application 
 
 ## Install from GitHub Packages
 
-CI publishes prerelease packages to the [SkyCD organization NuGet registry](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2). Package versions are generated as `0.1.0-ci.<run-number>`; find a published version on the package page. No nuget.org publication is configured. Each CI build also retains the exact `.nupkg` as an Actions artifact.
+Install the latest version from the [SkyCD organization NuGet registry](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2). Each build also provides the `.nupkg` as an Actions artifact.
 
 Add `https://nuget.pkg.github.com/SkyCD/index.json` as a NuGet source named `skycd`, then authenticate. GitHub Packages requires authentication even for public NuGet packages. For local use, supply a classic personal access token with `read:packages` through the NuGet credential provider or an environment variable; never commit it:
 
