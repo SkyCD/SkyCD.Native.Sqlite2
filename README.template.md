@@ -1,7 +1,7 @@
 [![Build, test and publish](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml/badge.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/LICENSE)
 [![Bundled SQLite](https://img.shields.io/badge/bundled_SQLite-{{SQLITE_VERSION}}-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/native-source.json)
-[![NuGet build](https://img.shields.io/badge/NuGet-{{PACKAGE_VERSION}}-blue.svg)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
+[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message={{PACKAGE_VERSION}}&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
 
 # SkyCD.Native.Sqlite2
 
@@ -63,7 +63,7 @@ Both little- and big-endian SQLite 2 database files are covered by tests. NuGet 
 
 The wrapper opens a private snapshot, so the original file is never opened for writing. It runs the engine's integrity check before reading. A native authorizer denies writes, attach, and all pragmas except the integrity check. Stored executable-plugin configuration is ordinary data, not executed commands. Imported application-specific behavior remains the caller's responsibility.
 
-Limits are 256 MiB input, 16 MiB decoded records, 128 table columns, one million rows per query, 64 b-tree levels, UTF-8 text, and a native VM operation budget. Corruption or limit failures raise `Sqlite2Exception`; unsupported SQLite storage versions raise `Sqlite2UnsupportedFormatException`. Only SQLite 2 storage formats 2–4 are accepted. Encrypted databases and SQLite 3 files are not supported.
+Limits are 256 MiB input, 16 MiB decoded records, 128 table columns, one million rows per query, 64 b-tree levels, UTF-8 text, and a native VM operation budget. Corruption or limit failures raise `Sqlite2Exception`; unsupported SQLite storage versions raise `Sqlite2UnsupportedFormatException`. Only SQLite 2 storage formats 2â€“4 are accepted. Encrypted databases and SQLite 3 files are not supported.
 
 ## Build and test
 
