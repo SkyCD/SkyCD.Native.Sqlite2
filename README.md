@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/LICENSE)
 [![Bundled SQLite](https://img.shields.io/badge/bundled_SQLite-2.8.17-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/native-source.json)
 [![Supported .NET versions](https://img.shields.io/static/v1?label=.NET&message=8.0%20%7C%209.0%20%7C%2010.0%20%7C%2011.0&color=512BD4)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml)
-[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.7&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
+[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.11&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
 
 # SkyCD.Native.Sqlite2
 
@@ -95,9 +95,9 @@ The helpers are a packaged .NET local tool, `SkyCD.Native.Sqlite2.Build`, from t
 
 ```sh
 dotnet new tool-manifest
-dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.7
+dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.11
 dotnet tool run sqlite2-build -- native-build --zig /path/to/zig
-dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.7.nupkg
+dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.11.nupkg
 dotnet tool run sqlite2-build -- check-licenses --sbom native-sbom.json --policy dependency-license-policy.json --report artifacts/license-report.json
 ```
 
