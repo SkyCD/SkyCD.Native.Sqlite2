@@ -5,10 +5,16 @@ namespace SkyCD.Native.Sqlite2.Build;
 
 internal static class PackageVerifier
 {
-    internal static void Run(string package)
+    internal static void Run(string package, string? expectedVersion = null)
     {
         using var archive = ZipFile.OpenRead(package);
         var entries = archive.Entries.Select(e => e.FullName).ToHashSet(StringComparer.Ordinal);
+        if (expectedVersion is not null)
+        {
+            using var metadata = archive.Entries.Single(e => e.FullName.EndsWith(".nuspec", StringComparison.Ordinal)).Open();
+            if (XDocument.Load(metadata).Descendants().Single(e => e.Name.LocalName == "version").Value != expectedVersion)
+                throw new BuildToolException("package version does not match the published release");
+        }
         if (entries.Any(e => e.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || e.Contains("sqlite-source", StringComparison.OrdinalIgnoreCase) || e.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)))
             throw new BuildToolException("package contains a source archive or code");
         if (entries.Contains("lib/net8.0/SkyCD.Native.Sqlite2.dll"))
