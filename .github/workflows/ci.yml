@@ -1,0 +1,134 @@
+name: Build, test and publish NuGet
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sqlite2-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: CI package version
+        id: version
+        shell: bash
+        run: echo "value=0.1.0-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+      - name: Install pinned Zig compiler
+        shell: bash
+        run: |
+          curl -L --fail --silent --show-error https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz -o "$RUNNER_TEMP/zig.tar.xz"
+          echo "02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239  $RUNNER_TEMP/zig.tar.xz" | sha256sum --check
+          tar -xf "$RUNNER_TEMP/zig.tar.xz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/zig-x86_64-linux-0.15.2" >> "$GITHUB_PATH"
+      - name: Build native libraries from checksum-verified upstream download
+        shell: pwsh
+        run: ./scripts/build-native.ps1 -ZigExecutable zig
+      - name: Restore, format, build and pack
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          dotnet restore SkyCD.Native.Sqlite2.slnx
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet format SkyCD.Native.Sqlite2.slnx --verify-no-changes --verbosity minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet build SkyCD.Native.Sqlite2.slnx -c Release --no-restore -warnaserror
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet pack src/SkyCD.Native.Sqlite2 -c Release --no-build -p:PackageVersion=$env:PACKAGE_VERSION -o artifacts/nuget
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $package = Get-ChildItem artifacts/nuget/*.nupkg | Select-Object -First 1
+          ./scripts/verify-package.ps1 -Package $package.FullName
+          ./scripts/check-license-compliance.ps1 -SbomPath native-sbom.json -PolicyPath dependency-license-policy.json -ReportPath artifacts/native-license-report.json
+          if (git ls-files '*.zip') { throw "Source ZIP must not be tracked." }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-assets
+          path: src/SkyCD.Native.Sqlite2/native/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nuget-package
+          path: artifacts/nuget/*.nupkg
+          if-no-files-found: error
+
+  test:
+    needs: build
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-arm64
+          - os: macos-15-intel
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-assets
+          path: src/SkyCD.Native.Sqlite2/native
+      - uses: actions/download-artifact@v8
+        with:
+          name: nuget-package
+          path: artifacts/nuget
+      - name: Native wrapper tests
+        shell: pwsh
+        run: dotnet test SkyCD.Native.Sqlite2.slnx -c Release --blame-hang-timeout 60s
+      - name: Consume the actual NuGet package with RID-specific publish
+        shell: pwsh
+        env:
+          PACKAGE_VERSION: ${{ needs.build.outputs.version }}
+          TEST_RID: ${{ matrix.rid }}
+        run: |
+          $feed = (Resolve-Path artifacts/nuget).Path
+          $escapedFeed = [Security.SecurityElement]::Escape($feed)
+          [IO.File]::WriteAllText((Join-Path $PWD "artifacts/smoke.NuGet.Config"), "<configuration><packageSources><clear/><add key='local' value='$escapedFeed'/><add key='nuget.org' value='https://api.nuget.org/v3/index.json'/></packageSources></configuration>")
+          dotnet restore tests/PackageSmoke/PackageSmoke.csproj -r $env:TEST_RID -p:NativeSqlite2Version=$env:PACKAGE_VERSION --configfile artifacts/smoke.NuGet.Config
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet publish tests/PackageSmoke/PackageSmoke.csproj -c Release -r $env:TEST_RID --self-contained false --no-restore -p:NativeSqlite2Version=$env:PACKAGE_VERSION -o artifacts/smoke
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet artifacts/smoke/PackageSmoke.dll tests/SkyCD.Native.Sqlite2.Tests/Fixtures/cds.db
+
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: nuget-package
+          path: artifacts/nuget
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish to SkyCD GitHub Packages
+        env:
+          PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet nuget push 'artifacts/nuget/*.nupkg' --source https://nuget.pkg.github.com/SkyCD/index.json --api-key "$PACKAGE_TOKEN" --skip-duplicate

@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+artifacts/
+*.zip
+*.nupkg
+*.snupkg
+src/SkyCD.Native.Sqlite2/native/runtimes/
+src/SkyCD.Native.Sqlite2/native/sha256.json

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/SkyCD.Native.Sqlite2/SkyCD.Native.Sqlite2.csproj" />
+  <Project Path="tests/SkyCD.Native.Sqlite2.Tests/SkyCD.Native.Sqlite2.Tests.csproj" />
+</Solution>
