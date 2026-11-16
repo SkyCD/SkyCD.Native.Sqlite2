@@ -34,5 +34,5 @@ jobs:
             fi
             gh pr merge "$number" --repo "$GH_REPO" --squash --match-head-commit "$TESTED_SHA"
             # GITHUB_TOKEN merges do not emit another push workflow; dispatch it explicitly.
-            gh workflow run ci.yml --repo "$GH_REPO" --ref main
+            gh workflow run ci.yml --repo "$GH_REPO" --ref main -f channel=preview
           done

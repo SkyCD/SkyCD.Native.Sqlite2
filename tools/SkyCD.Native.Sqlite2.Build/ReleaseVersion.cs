@@ -13,14 +13,20 @@ internal static class ReleaseVersion
         if (!Regex.IsMatch(sqliteVersion, @"^\d+\.\d+\.\d+$") ||
             !int.TryParse(sqliteVersion.Replace(".", ""), NumberStyles.None, CultureInfo.InvariantCulture, out var revision) || revision <= 0)
             throw new BuildToolException("SQLite version cannot be represented as an integer revision");
-        var patches = releases.Select(version => Regex.Match(version.Trim(), @"^v?0\.1\.(\d+)(?:\.\d+|-[0-9A-Za-z.\-]+)?$"))
+        var patches = releases.Where(version => !PublicationPolicy.IsPreview(version.Trim().TrimStart('v'))).Select(version => Regex.Match(version.Trim(), @"^v?0\.1\.(\d+)(?:\.\d+|-[0-9A-Za-z.\-]+)?$"))
             .Where(match => match.Success).Select(match => int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture)).ToArray();
         var patch = patches.Length == 0 ? 0 : checked(patches.Max() + 1);
         return $"0.1.{patch}.{revision}";
     }
 
-    internal static async Task Run(string root, string output)
+    internal static async Task Run(string root, string output, string eventName = "workflow_dispatch")
     {
+        if (!PublicationPolicy.IsVersioned(eventName))
+        {
+            await File.AppendAllTextAsync(output, $"value={PublicationPolicy.PreviewVersion}\n");
+            Console.WriteLine($"Preview package version: {PublicationPolicy.PreviewVersion}");
+            return;
+        }
         using var definition = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "native-source.json")));
         var source = definition.RootElement;
         var submodule = Path.Combine(root, source.GetProperty("path").GetString()!);

@@ -18,6 +18,8 @@ It is intended for reading and migrating old catalogs, backups, and application 
 
 Install the latest version from the [SkyCD organization NuGet registry](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2). Each build also provides the `.nupkg` as an Actions artifact.
 
+Use a numbered release for a fixed version, or `0.1.0-next` for the latest tested development build. The preview is replaced after code changes merge into `main`; clear your local NuGet cache to download an updated copy of the same preview version. Numbered releases are published manually or by the scheduled release check when there are unreleased commits.
+
 Add `https://nuget.pkg.github.com/SkyCD/index.json` as a NuGet source named `skycd`, then authenticate. GitHub Packages requires authentication even for public NuGet packages. For local use, supply a classic personal access token with `read:packages` through the NuGet credential provider or an environment variable; never commit it:
 
 ```powershell

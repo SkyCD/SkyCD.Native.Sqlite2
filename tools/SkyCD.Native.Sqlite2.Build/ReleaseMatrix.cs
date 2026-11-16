@@ -4,7 +4,7 @@ namespace SkyCD.Native.Sqlite2.Build;
 
 internal static class ReleaseMatrix
 {
-    internal static async Task Run(string output)
+    internal static async Task Run(string output, string eventName = "workflow_dispatch")
     {
         using var http = new HttpClient();
         using var releases = JsonDocument.Parse(await http.GetStringAsync("https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json"));
@@ -21,6 +21,7 @@ internal static class ReleaseMatrix
         var unreleased = latestTag is null || await ProcessRunner.Run("git", ["rev-list", "--count", $"{latestTag}..HEAD"], true) != "0";
         await File.AppendAllTextAsync(output, $"matrix={JsonSerializer.Serialize(new { include = matrix })}\nframeworks={frameworks}\nlatest={channels[^1]}.x\n");
         await File.AppendAllTextAsync(output, $"unreleased={unreleased.ToString().ToLowerInvariant()}\n");
+        await File.AppendAllTextAsync(output, $"build={PublicationPolicy.ShouldBuild(eventName, unreleased).ToString().ToLowerInvariant()}\n");
         Console.WriteLine($"Discovered stable .NET targets: {frameworks}");
     }
 }
