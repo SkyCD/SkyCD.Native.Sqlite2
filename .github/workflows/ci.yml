@@ -72,12 +72,12 @@ jobs:
       - name: Restore, format, build and pack
         env:
           PACKAGE_VERSION: ${{ steps.version.outputs.value }}
-          LIBRARY_FRAMEWORKS: ${{ needs.discover.outputs.frameworks }}
+          LibraryTargetFrameworks: ${{ needs.discover.outputs.frameworks }}
         run: |
           dotnet restore SkyCD.Native.Sqlite2.slnx
           dotnet format SkyCD.Native.Sqlite2.slnx --verify-no-changes --verbosity minimal
           dotnet build SkyCD.Native.Sqlite2.slnx -c Release --no-restore -warnaserror
-          dotnet pack src/SkyCD.Native.Sqlite2 -c Release -p:TargetFrameworks="${LIBRARY_FRAMEWORKS//;/%3B}" -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
+          dotnet pack src/SkyCD.Native.Sqlite2 -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
           dotnet pack "$BUILD_TOOL" -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
           for package in artifacts/nuget/*.nupkg; do
             dotnet run --project "$BUILD_TOOL" -c Release --no-build -- verify-package --package "$package"
