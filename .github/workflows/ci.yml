@@ -177,6 +177,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -185,16 +187,23 @@ jobs:
         with:
           name: generated-readme
           path: .
-      - name: Commit generated README without a workflow loop
+      - name: Open a generated README update PR
         env:
           PACKAGE_VERSION: ${{ needs.build.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add README.md
-          if ! git diff --cached --quiet; then
-            git commit -m '[489] Update generated README [skip ci]' -m 'Co-authored-by: OpenAI Codex <codex@openai.com>'
+          if git diff --quiet -- README.md; then
+            git tag "v${PACKAGE_VERSION}"
+            git push origin "v${PACKAGE_VERSION}"
+            exit 0
           fi
-          git tag "v${PACKAGE_VERSION}"
-          git push origin main
-          git push origin "v${PACKAGE_VERSION}"
+          branch="automation/readme-${PACKAGE_VERSION}"
+          git switch -c "$branch"
+          git add README.md
+          git commit -m '[489] Update generated README' -m 'Co-authored-by: OpenAI Codex <codex@openai.com>'
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" --title '[489] Update generated README' --body 'Refresh the generated README for the published package. This PR is verified against the trusted template before automatic merge.'
+          gh workflow run readme-update.yml --ref main -f branch="$branch" -f version="$PACKAGE_VERSION" -f run-id="${{ github.run_id }}"
