@@ -83,7 +83,7 @@ dotnet pack src/SkyCD.Native.Sqlite2 -c Release -o artifacts/nuget
 
 SQLite comes from the official [SQLite Git mirror](https://github.com/sqlite/sqlite) as the `upstream/sqlite` Git submodule, pinned to the release tag and exact commit recorded in `native-source.json`. The .NET build tool verifies that commit and rejects modified tracked source, copies the library sources to a temporary directory, generates the parser with upstream Lemon, and compiles all five native runtimes. It leaves the submodule unchanged. **No SQLite source ZIP is downloaded, committed, or included in packages or workflow artifacts.** Generated native binaries and manifests are also excluded from Git.
 
-The engine remains pinned for reproducibility. The build applies explicit 64-bit pointer/modern MinGW compatibility changes and small native `initPage` guards for cyclic ancestors, depth overflow and cell-array bounds, demonstrated necessary by malformed-file tests. The .NET tool contains the complete transformations. No GPL implementation is copied. Windows CRT section sentinels and its no-op DLL callback are supplied by this project under MIT, avoiding unmarked default startup units.
+The engine remains pinned for reproducibility. The build applies platform compatibility changes and native bounds checks for malformed databases. The .NET tool contains the complete transformations.
 
 CI reads Microsoft's official .NET release index on every build and automatically targets every stable major release from .NET 8 through the latest, excluding previews. The NuGet package includes an assembly for each discovered target. Each target is tested with an actual RID-published package on Windows x64, Windows ARM64, Linux x64, Intel macOS and ARM macOS. Dependabot checks Actions and NuGet dependencies monthly; its update PRs run the same discovery, so newly released .NET versions join those builds automatically. Build tooling itself requires .NET 10.
 
@@ -91,13 +91,11 @@ Publishing to GitHub Packages happens only for `main`, after every platform and 
 
 `PackageDescription.template.txt` generates each package's description, shown as **About this version** in GitHub Packages. It records that build's supported .NET versions, operating systems and architectures using the same CI target list and native platform metadata.
 
-A scheduled check runs every four months (March 16, July 16 and November 16). It compares `main` against the latest reachable release tag and builds/releases only when commits remain untagged. A new .NET release alone does not force a scheduled release without new commits.
-
-Dependabot PRs are automatically squash-merged only after the complete build, license checks and platform/.NET test matrix succeed. A separate workflow verifies the author, repository, base branch and exact tested head commit before merging, then dispatches the main build. It never checks out or runs PR code with write permissions. Other authors' PRs are not automatically merged.
+Every four months, CI publishes a new version if there are unreleased changes.
 
 ## License
 
-The wrapper, build tools and synthetic fixtures are MIT licensed. SQLite is public domain with its blessing; bundled runtime portions retain their permissive notices. The package declares `MIT AND blessing` and ships the corresponding notices. The linked MinGW startup/runtime sources have explicit public-domain headers; the two default startup units without those headers are replaced by project-owned MIT definitions. No ZPL dependency is declared. See `LICENSE`, `src/SkyCD.Native.Sqlite2/native/licenses`, and `native-sbom.json`.
+The wrapper, build tools and synthetic fixtures use the [MIT license](LICENSE). SQLite is public domain with its blessing. The package declares `MIT AND blessing` and includes third-party notices. See the [native notices](src/SkyCD.Native.Sqlite2/native/NOTICE.txt) and [license audit](docs/windows-runtime-license-audit.md) for details.
 
 ## Local .NET build tool
 
