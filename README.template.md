@@ -85,10 +85,6 @@ These commands build the bundled SQLite libraries from the official source and r
 
 Packages are tested on the supported platforms before publication. Check the badges above for supported .NET versions, or the [package page](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2) for details about a particular version.
 
-## License
-
-The wrapper, build tools and synthetic fixtures use the [MIT license](LICENSE). SQLite is public domain with its blessing. The package declares `MIT AND blessing` and includes third-party notices. See the [native notices](src/SkyCD.Native.Sqlite2/native/NOTICE.txt) and [license audit](docs/windows-runtime-license-audit.md) for details.
-
 ## Local .NET build tool
 
 The repository includes a .NET build tool for contributors. Run it from the repository root:
