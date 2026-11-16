@@ -81,17 +81,9 @@ dotnet test SkyCD.Native.Sqlite2.slnx -c Release --no-build
 dotnet pack src/SkyCD.Native.Sqlite2 -c Release -o artifacts/nuget
 ```
 
-SQLite comes from the official [SQLite Git mirror](https://github.com/sqlite/sqlite) as the `upstream/sqlite` Git submodule, pinned to the release tag and exact commit recorded in `native-source.json`. The .NET build tool verifies that commit and rejects modified tracked source, copies the library sources to a temporary directory, generates the parser with upstream Lemon, and compiles all five native runtimes. It leaves the submodule unchanged. **No SQLite source ZIP is downloaded, committed, or included in packages or workflow artifacts.** Generated native binaries and manifests are also excluded from Git.
+These commands build the bundled SQLite libraries from the official source and run the tests. If you only want to use the library, install the NuGet package instead; it includes the native libraries you need.
 
-The engine remains pinned for reproducibility. The build applies platform compatibility changes and native bounds checks for malformed databases. The .NET tool contains the complete transformations.
-
-CI reads Microsoft's official .NET release index on every build and automatically targets every stable major release from .NET 8 through the latest, excluding previews. The NuGet package includes an assembly for each discovered target. Each target is tested with an actual RID-published package on Windows x64, Windows ARM64, Linux x64, Intel macOS and ARM macOS. Dependabot checks Actions and NuGet dependencies monthly; its update PRs run the same discovery, so newly released .NET versions join those builds automatically. Build tooling itself requires .NET 10.
-
-Publishing to GitHub Packages happens only for `main`, after every platform and .NET target passes, using the workflow's `GITHUB_TOKEN`. Pushes and manual runs generate new CI package versions automatically. CI then regenerates this README from `README.template.md`, updating the package and bundled SQLite badges, commits it without triggering another build, and tags the released commit as `v<package-version>`.
-
-`PackageDescription.template.txt` generates each package's description, shown as **About this version** in GitHub Packages. It records that build's supported .NET versions, operating systems and architectures using the same CI target list and native platform metadata.
-
-Every four months, CI publishes a new version if there are unreleased changes.
+Packages are tested on the supported platforms before publication. Check the badges above for supported .NET versions, or the [package page](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2) for details about a particular version.
 
 ## License
 
