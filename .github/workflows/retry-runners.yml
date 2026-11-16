@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: runner-retry-${{ github.event.workflow_run.id }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   retry:
