@@ -1,7 +1,7 @@
 [![Build, test and publish](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml/badge.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/LICENSE)
 [![Bundled SQLite](https://img.shields.io/badge/bundled_SQLite-2.8.17-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/native-source.json)
-[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.4&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
+[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.5&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
 
 # SkyCD.Native.Sqlite2
 
@@ -90,6 +90,8 @@ Publishing to GitHub Packages happens only for `main`, after every platform and 
 
 A scheduled check runs every four months (March 16, July 16 and November 16). It compares `main` against the latest reachable release tag and builds/releases only when commits remain untagged. A new .NET release alone does not force a scheduled release without new commits.
 
+Dependabot PRs are automatically squash-merged only after the complete build, license checks and platform/.NET test matrix succeed. A separate workflow verifies the author, repository, base branch and exact tested head commit before merging, then dispatches the main build. It never checks out or runs PR code with write permissions. Other authors' PRs are not automatically merged.
+
 ## License
 
 The wrapper, build tools and synthetic fixtures are MIT licensed. SQLite is public domain with its blessing; bundled runtime portions retain their permissive notices. The package declares `MIT AND blessing` and ships the corresponding notices. The linked MinGW startup/runtime sources have explicit public-domain headers; the two default startup units without those headers are replaced by project-owned MIT definitions. No ZPL dependency is declared. See `LICENSE`, `src/SkyCD.Native.Sqlite2/native/licenses`, and `native-sbom.json`.
@@ -100,9 +102,9 @@ The helpers are a packaged .NET local tool, `SkyCD.Native.Sqlite2.Build`, from t
 
 ```sh
 dotnet new tool-manifest
-dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.4
+dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.5
 dotnet tool run sqlite2-build -- native-build --zig /path/to/zig
-dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.4.nupkg
+dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.5.nupkg
 dotnet tool run sqlite2-build -- check-licenses --sbom native-sbom.json --policy dependency-license-policy.json --report artifacts/license-report.json
 ```
 
