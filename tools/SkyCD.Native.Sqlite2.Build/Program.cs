@@ -17,10 +17,11 @@ try
     {
         case "native-build": await NativeBuilder.Run(root, Required("--zig"), options.GetValueOrDefault("--runtime"), options.GetValueOrDefault("--output-root")); break;
         case "verify-package": PackageVerifier.Run(Required("--package"), options.GetValueOrDefault("--version")); break;
-        case "release-version": await ReleaseVersion.Run(root, Required("--output")); break;
+        case "release-version": await ReleaseVersion.Run(root, Required("--output"), options.GetValueOrDefault("--event", "workflow_dispatch")); break;
+        case "delete-preview": await PreviewPublisher.Run(); break;
         case "check-licenses": return LicenseChecker.Run(Required("--sbom"), Required("--policy"), Required("--report"));
         case "smoke-package": await PackageSmoke.Run(root, Required("--version"), Required("--rid"), Required("--feed"), options.GetValueOrDefault("--framework", "net10.0")); break;
-        case "release-matrix": await ReleaseMatrix.Run(Required("--output")); break;
+        case "release-matrix": await ReleaseMatrix.Run(Required("--output"), options.GetValueOrDefault("--event", "workflow_dispatch")); break;
         case "retry-runners": await RunnerRetry.Run(Required("--repository"), Required("--run-id")); break;
         case "generate-readme": ReadmeGenerator.Run(root, Required("--version"), options.GetValueOrDefault("--frameworks") is "published" ? ReadmeGenerator.PublishedFrameworks(root) : options.GetValueOrDefault("--frameworks")); break;
         case "classify-changes": await ChangeClassifier.Run(Required("--base"), Required("--head"), Required("--output")); break;
