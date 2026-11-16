@@ -6,3 +6,5 @@ artifacts/
 *.snupkg
 src/SkyCD.Native.Sqlite2/native/runtimes/
 src/SkyCD.Native.Sqlite2/native/sha256.json
+**/PackageMetadata.g.props
+tests/PackageSmoke/global.json

@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks Condition="'$(TargetFrameworks)' == ''">net8.0;net9.0;net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(LibraryTargetFrameworks)' != ''">$(LibraryTargetFrameworks)</TargetFrameworks>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>SkyCD.Native.Sqlite2</PackageId>
     <Version>0.1.0-local</Version>
     <Authors>SkyCD contributors</Authors>
-    <Description>Read-only .NET access to legacy SQLite 2 databases with bundled native SQLite 2.8.17 runtimes.</Description>
+    <Description>Read-only .NET access to legacy SQLite 2 databases with bundled native libraries.</Description>
     <RepositoryUrl>https://github.com/SkyCD/SkyCD.Native.Sqlite2</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/SkyCD/SkyCD.Native.Sqlite2</PackageProjectUrl>
@@ -16,13 +17,15 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="native/sha256.json;native/NOTICE.txt" />
     <None Include="native/runtimes/**/*" Link="runtimes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="runtimes/%(RecursiveDir)%(Filename)%(Extension)" />
     <None Include="native/licenses/*.txt" Link="sqlite2-licenses/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="licenses/" />
-    <None Update="native/sha256.json" Link="sqlite2-sha256.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="licenses/sha256.json" />
-    <None Update="native/NOTICE.txt" Link="sqlite2-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="licenses/NOTICE.txt" />
+    <None Include="native/sha256.json" Link="sqlite2-sha256.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="licenses/" />
+    <None Include="native/NOTICE.txt" Link="sqlite2-NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Pack="true" PackagePath="licenses/" />
     <None Include="../../README.md" Pack="true" PackagePath="/" />
-    <None Include="../../LICENSE" Pack="true" PackagePath="licenses/MIT.txt" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="licenses/" />
     <None Include="buildTransitive/SkyCD.Native.Sqlite2.targets" Pack="true" PackagePath="buildTransitive/" />
     <None Remove="**/*.zip" />
   </ItemGroup>
+  <Import Project="PackageMetadata.g.props" Condition="Exists('PackageMetadata.g.props')" />
 </Project>

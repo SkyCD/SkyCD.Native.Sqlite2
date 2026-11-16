@@ -1,0 +1,6 @@
+Read-only .NET access to legacy SQLite 2 databases with bundled native libraries.
+
+Supported .NET versions: {{DOTNET_VERSIONS_TEXT}}.
+Supported operating systems and architectures: {{SUPPORTED_PLATFORMS}}.
+
+The package includes the matching managed assembly, native runtime and license notices. No separate SQLite installation is required.

@@ -4,5 +4,12 @@
   "path": "upstream/sqlite",
   "tag": "version-2.8.17",
   "commit": "a34b0794e03780b6b8d947097e53721cd510d270",
+  "platforms": {
+    "win-x64": "Windows x64",
+    "win-arm64": "Windows ARM64",
+    "linux-x64": "Linux x64 (glibc 2.17+)",
+    "osx-x64": "macOS Intel x64 (10.13+)",
+    "osx-arm64": "macOS ARM64 (11+)"
+  },
   "zigVersion": "0.15.2"
 }
