@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using System.Xml.Linq;
 using SkyCD.Native.Sqlite2.Build;
 using Xunit;
 
@@ -31,10 +33,13 @@ public sealed class BuildToolTests
     {
         InTemporaryDirectory(root =>
         {
-            File.WriteAllText(Path.Combine(root, "native-source.json"), """{"version":"2.8.17"}""");
-            File.WriteAllText(Path.Combine(root, "README.template.md"), "Badge {{SQLITE_VERSION}} / {{PACKAGE_VERSION}}\n# Library");
-            ReadmeGenerator.Run(root, "0.1.0-ci.7");
-            Assert.Equal("Badge 2.8.17 / 0.1.0-ci.7\n# Library", File.ReadAllText(Path.Combine(root, "README.md")));
+            File.WriteAllText(Path.Combine(root, "native-source.json"), """{"version":"2.8.17","platforms":{"win-arm64":"Windows ARM64"}}""");
+            Directory.CreateDirectory(Path.Combine(root, "src/SkyCD.Native.Sqlite2"));
+            File.WriteAllText(Path.Combine(root, "PackageDescription.template.txt"), "Supports {{DOTNET_VERSIONS_TEXT}} on {{SUPPORTED_PLATFORMS}}");
+            File.WriteAllText(Path.Combine(root, "README.template.md"), "Badge {{SQLITE_VERSION}} / {{PACKAGE_VERSION}} / {{DOTNET_VERSIONS}}\n# Library");
+            ReadmeGenerator.Run(root, "0.1.0-ci.7", "net8.0;net11.0");
+            Assert.Equal("Badge 2.8.17 / 0.1.0-ci.7 / 8.0%20%7C%2011.0\n# Library", File.ReadAllText(Path.Combine(root, "README.md")));
+            Assert.Equal("Supports 8.0, 11.0 on Windows ARM64", XDocument.Load(Path.Combine(root, "src/SkyCD.Native.Sqlite2/PackageMetadata.g.props")).Descendants("Description").Single().Value);
         });
     }
 

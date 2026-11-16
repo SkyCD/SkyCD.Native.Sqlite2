@@ -20,7 +20,7 @@ try
         case "check-licenses": return LicenseChecker.Run(Required("--sbom"), Required("--policy"), Required("--report"));
         case "smoke-package": await PackageSmoke.Run(root, Required("--version"), Required("--rid"), Required("--feed"), options.GetValueOrDefault("--framework", "net10.0")); break;
         case "release-matrix": await ReleaseMatrix.Run(Required("--output")); break;
-        case "generate-readme": ReadmeGenerator.Run(root, Required("--version")); break;
+        case "generate-readme": ReadmeGenerator.Run(root, Required("--version"), options.GetValueOrDefault("--frameworks")); break;
         default: throw new BuildToolException($"unknown command {args[0]}");
     }
     return 0;

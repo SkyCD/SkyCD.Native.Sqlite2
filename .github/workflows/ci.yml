@@ -65,8 +65,9 @@ jobs:
       - name: Generate README from template and build native assets
         env:
           PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+          LIBRARY_FRAMEWORKS: ${{ needs.discover.outputs.frameworks }}
         run: |
-          dotnet run --project "$BUILD_TOOL" -c Release -- generate-readme --version "$PACKAGE_VERSION"
+          dotnet run --project "$BUILD_TOOL" -c Release -- generate-readme --version "$PACKAGE_VERSION" --frameworks "$LIBRARY_FRAMEWORKS"
           dotnet run --project "$BUILD_TOOL" -c Release --no-build -- native-build --zig zig
       - name: Restore, format, build and pack
         env:

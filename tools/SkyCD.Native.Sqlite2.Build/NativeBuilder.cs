@@ -30,7 +30,7 @@ internal static class NativeBuilder
             var sources = Directory.GetFiles(work, "*.c").Where(p => Path.GetFileName(p) is not ("shell.c" or "tclsqlite.c")).Order(StringComparer.Ordinal).ToArray();
             var exports = Path.Combine(work, "exports.def");
             File.WriteAllText(exports, "EXPORTS\nsqlite_open\nsqlite_close\nsqlite_compile\nsqlite_step\nsqlite_finalize\nsqlite_freemem\nsqlite_set_authorizer\nsqlite_progress_handler\nsqlite_libversion\n");
-            foreach (var rid in (runtimes ?? "win-x64,win-arm64,linux-x64,osx-x64,osx-arm64").Split(','))
+            foreach (var rid in runtimes?.Split(',') ?? source.GetProperty("platforms").EnumerateObject().Select(x => x.Name))
             {
                 var target = rid switch
                 {
