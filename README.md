@@ -2,7 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/LICENSE)
 [![Bundled SQLite](https://img.shields.io/badge/bundled_SQLite-2.8.17-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/native-source.json)
 [![Supported .NET versions](https://img.shields.io/static/v1?label=.NET&message=8.0%20%7C%209.0%20%7C%2010.0%20%7C%2011.0&color=512BD4)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml)
-[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.11&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
+[![NuGet build](https://img.shields.io/static/v1?label=NuGet&message=0.1.0-ci.15&color=blue)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
 
 # SkyCD.Native.Sqlite2
 
