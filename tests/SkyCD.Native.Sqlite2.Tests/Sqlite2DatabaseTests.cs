@@ -11,6 +11,15 @@ namespace SkyCD.Native.Sqlite2.Tests;
 
 public sealed class Sqlite2DatabaseTests
 {
+    [Fact]
+    public void CyclicAncestor_IsRejectedByNativeBoundsChecks()
+    {
+        var bytes = File.ReadAllBytes(Fixture("cds.db"));
+        bytes[1024] = 2;
+        using var source = new MemoryStream(bytes);
+        Assert.Throws<Sqlite2Exception>(() => new Sqlite2Database(source));
+    }
+
     private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", name);
 
     [Fact]

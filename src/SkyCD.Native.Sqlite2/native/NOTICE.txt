@@ -12,6 +12,6 @@ May you share freely, never taking more than you give.
 Source: https://www.sqlite.org/sqlite-source-2_8_17.zip
 SHA-256: e718e71fec6ff3757a01c46ec505661a76843e5bbce0327d12497176ad5add49
 
-Built with Zig 0.15.2. MinGW CRT/libmingw32 support in the Windows DLL is public domain/permissively licensed; Zig's compiler runtime is MIT licensed (with separately licensed permissive upstream portions covered by the accompanying notices). Corresponding upstream license texts accompany this notice.
+Built with Zig 0.15.2. The linked MinGW runtime units are explicitly public domain; their declarations are in licenses/MinGW-Public-Domain.txt. The two unmarked default startup units are replaced by this project's MIT WindowsCrtCompat.c. Zig's compiler runtime is MIT licensed (licenses/Zig-MIT.txt). See docs/windows-runtime-license-audit.md for the linked-unit audit. No ZPL component is declared.
 
-SkyCD build changes: 64-bit pointer configuration, modern MinGW off_t header compatibility, and bounds checks in SQLite initPage to reject ancestor cycles/depth over 64 and excessive/cyclic cells. See scripts/build-native.ps1 for exact transformations and flags.
+SkyCD build changes: 64-bit pointer configuration, modern MinGW off_t header compatibility, and bounds checks in SQLite initPage to reject ancestor cycles/depth over 64 and excessive/cyclic cells. See tools/SkyCD.Native.Sqlite2.Build/NativeBuilder.cs for exact transformations and flags.

@@ -11,7 +11,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/SkyCD/SkyCD.Native.Sqlite2</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageLicenseExpression>MIT AND BSD-2-Clause AND blessing AND ZPL-2.1</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT AND blessing</PackageLicenseExpression>
     <PackageTags>sqlite;sqlite2;native;legacy;read-only</PackageTags>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>

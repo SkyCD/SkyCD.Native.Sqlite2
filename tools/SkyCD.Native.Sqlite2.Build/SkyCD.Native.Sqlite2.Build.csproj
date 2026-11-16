@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <PackAsTool>true</PackAsTool><ToolCommandName>sqlite2-build</ToolCommandName><PackageId>SkyCD.Native.Sqlite2.Build</PackageId><Version>0.1.0-local</Version>
+    <Authors>SkyCD contributors</Authors><Description>Local native build, package verification and licensing tools.</Description>
+    <RepositoryUrl>https://github.com/SkyCD/SkyCD.Native.Sqlite2</RepositoryUrl><PackageLicenseExpression>MIT</PackageLicenseExpression><PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup><None Include="../../README.md" Pack="true" PackagePath="/"/><None Include="../../LICENSE" Pack="true" PackagePath="licenses/MIT.txt"/></ItemGroup>
+</Project>

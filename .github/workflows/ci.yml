@@ -13,6 +13,9 @@ concurrency:
   group: sqlite2-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  BUILD_TOOL: tools/SkyCD.Native.Sqlite2.Build
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,35 +29,38 @@ jobs:
           dotnet-version: 10.0.x
       - name: CI package version
         id: version
-        shell: bash
         run: echo "value=0.1.0-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
       - name: Install pinned Zig compiler
-        shell: bash
         run: |
           curl -L --fail --silent --show-error https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz -o "$RUNNER_TEMP/zig.tar.xz"
           echo "02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239  $RUNNER_TEMP/zig.tar.xz" | sha256sum --check
           tar -xf "$RUNNER_TEMP/zig.tar.xz" -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/zig-x86_64-linux-0.15.2" >> "$GITHUB_PATH"
-      - name: Build native libraries from checksum-verified upstream download
-        shell: pwsh
-        run: ./scripts/build-native.ps1 -ZigExecutable zig
+      - name: Generate README from template and build native assets
+        env:
+          PACKAGE_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          dotnet run --project "$BUILD_TOOL" -c Release -- generate-readme --version "$PACKAGE_VERSION"
+          dotnet run --project "$BUILD_TOOL" -c Release --no-build -- native-build --zig zig
       - name: Restore, format, build and pack
-        shell: pwsh
         env:
           PACKAGE_VERSION: ${{ steps.version.outputs.value }}
         run: |
           dotnet restore SkyCD.Native.Sqlite2.slnx
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet format SkyCD.Native.Sqlite2.slnx --verify-no-changes --verbosity minimal
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           dotnet build SkyCD.Native.Sqlite2.slnx -c Release --no-restore -warnaserror
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet pack src/SkyCD.Native.Sqlite2 -c Release --no-build -p:PackageVersion=$env:PACKAGE_VERSION -o artifacts/nuget
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $package = Get-ChildItem artifacts/nuget/*.nupkg | Select-Object -First 1
-          ./scripts/verify-package.ps1 -Package $package.FullName
-          ./scripts/check-license-compliance.ps1 -SbomPath native-sbom.json -PolicyPath dependency-license-policy.json -ReportPath artifacts/native-license-report.json
-          if (git ls-files '*.zip') { throw "Source ZIP must not be tracked." }
+          dotnet pack src/SkyCD.Native.Sqlite2 -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
+          dotnet pack "$BUILD_TOOL" -c Release --no-build -p:PackageVersion="$PACKAGE_VERSION" -o artifacts/nuget
+          for package in artifacts/nuget/*.nupkg; do
+            dotnet run --project "$BUILD_TOOL" -c Release --no-build -- verify-package --package "$package"
+          done
+          dotnet run --project "$BUILD_TOOL" -c Release --no-build -- check-licenses --sbom native-sbom.json --policy dependency-license-policy.json --report artifacts/native-license-report.json
+          dotnet tool install SkyCD.Native.Sqlite2.Build --tool-path artifacts/installed-tool --version "$PACKAGE_VERSION" --add-source "$PWD/artifacts/nuget"
+          artifacts/installed-tool/sqlite2-build verify-package --package "artifacts/nuget/SkyCD.Native.Sqlite2.$PACKAGE_VERSION.nupkg"
+          if [ -n "$(git ls-files '*.zip' '*.ps1')" ]; then
+            echo "Source ZIPs and PowerShell helpers must not be tracked."
+            exit 1
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: native-assets
@@ -65,6 +71,10 @@ jobs:
           name: nuget-package
           path: artifacts/nuget/*.nupkg
           if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        with:
+          name: generated-readme
+          path: README.md
 
   test:
     needs: build
@@ -77,7 +87,7 @@ jobs:
             rid: linux-x64
           - os: windows-latest
             rid: win-x64
-          - os: macos-latest
+          - os: macos-15
             rid: osx-arm64
           - os: macos-15-intel
             rid: osx-x64
@@ -96,22 +106,14 @@ jobs:
           name: nuget-package
           path: artifacts/nuget
       - name: Native wrapper tests
-        shell: pwsh
+        shell: bash
         run: dotnet test SkyCD.Native.Sqlite2.slnx -c Release --blame-hang-timeout 60s
-      - name: Consume the actual NuGet package with RID-specific publish
-        shell: pwsh
+      - name: Consume the actual RID-published NuGet package
+        shell: bash
         env:
           PACKAGE_VERSION: ${{ needs.build.outputs.version }}
           TEST_RID: ${{ matrix.rid }}
-        run: |
-          $feed = (Resolve-Path artifacts/nuget).Path
-          $escapedFeed = [Security.SecurityElement]::Escape($feed)
-          [IO.File]::WriteAllText((Join-Path $PWD "artifacts/smoke.NuGet.Config"), "<configuration><packageSources><clear/><add key='local' value='$escapedFeed'/><add key='nuget.org' value='https://api.nuget.org/v3/index.json'/></packageSources></configuration>")
-          dotnet restore tests/PackageSmoke/PackageSmoke.csproj -r $env:TEST_RID -p:NativeSqlite2Version=$env:PACKAGE_VERSION --configfile artifacts/smoke.NuGet.Config
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet publish tests/PackageSmoke/PackageSmoke.csproj -c Release -r $env:TEST_RID --self-contained false --no-restore -p:NativeSqlite2Version=$env:PACKAGE_VERSION -o artifacts/smoke
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          dotnet artifacts/smoke/PackageSmoke.dll tests/SkyCD.Native.Sqlite2.Tests/Fixtures/cds.db
+        run: dotnet run --project "$BUILD_TOOL" -c Release --no-build -- smoke-package --version "$PACKAGE_VERSION" --rid "$TEST_RID" --feed artifacts/nuget
 
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -128,7 +130,30 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-      - name: Publish to SkyCD GitHub Packages
+      - name: Publish library and local tool to SkyCD GitHub Packages
         env:
           PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: dotnet nuget push 'artifacts/nuget/*.nupkg' --source https://nuget.pkg.github.com/SkyCD/index.json --api-key "$PACKAGE_TOKEN" --skip-duplicate
+
+  readme:
+    if: github.ref == 'refs/heads/main'
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/download-artifact@v8
+        with:
+          name: generated-readme
+          path: .
+      - name: Commit generated README without a workflow loop
+        run: |
+          if git diff --quiet -- README.md; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md
+          git commit -m '[489] Update generated README [skip ci]' -m 'Co-authored-by: OpenAI Codex <codex@openai.com>'
+          git push origin main

@@ -1,0 +1,6 @@
+{
+  "version": "2.8.17",
+  "url": "https://www.sqlite.org/sqlite-source-2_8_17.zip",
+  "sha256": "e718e71fec6ff3757a01c46ec505661a76843e5bbce0327d12497176ad5add49",
+  "zigVersion": "0.15.2"
+}

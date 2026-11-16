@@ -1,0 +1,126 @@
+crt/CRT_fp10.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+crt/gccmain.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+crt/mingw_helpers.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+crt/natstart.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+crt/pesect.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+crt/pseudo-reloc.c
+/* pseudo-reloc.c
+
+   Contributed by Egor Duda  <deo@logos-m.ru>
+   Modified by addition of runtime_pseudo_reloc version 2
+   by Kai Tietz  <kai.tietz@onevision.com>
+
+   THIS SOFTWARE IS NOT COPYRIGHTED
+
+   This source code is offered for use in the public domain. You may
+   use, modify or distribute it freely.
+
+   This code is distributed in the hope that it will be useful but
+   WITHOUT ANY WARRANTY. ALL WARRANTIES, EXPRESS OR IMPLIED ARE HEREBY
+   DISCLAMED. This includes but is not limited to warranties of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+*/
+
+crt/tlsmcrt.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ *
+ * Written by Kai Tietz  <kai.tietz@onevision.com>
+ */
+
+crt/tlssup.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ *
+ * Written by Kai Tietz  <kai.tietz@onevision.com>
+ */
+
+crt/tlsthrd.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ *
+ * Written by Kai Tietz  <kai.tietz@onevision.com>
+ *
+ * This file is used by if gcc is built with --enable-threads=win32.
+ *
+ * Based on version created by Mumit Khan  <khan@nanotech.wisc.edu>
+ *
+ */
+
+stdio/ucrt___local_stdio_printf_options.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+misc/ucrt_amsg_exit.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+stdio/ucrt_fprintf.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+stdio/ucrt_sprintf.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+stdio/ucrt_vfprintf.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */
+
+crt/crtdll.c
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
+ */

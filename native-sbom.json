@@ -33,7 +33,9 @@
       "version": "zig-0.15.2-bundled",
       "licenses": [
         {
-          "expression": "ZPL-2.1 AND LicenseRef-Public-Domain"
+          "license": {
+            "name": "Public Domain"
+          }
         }
       ]
     },

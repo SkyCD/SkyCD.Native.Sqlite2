@@ -1,6 +1,9 @@
-# SkyCD.Native.Sqlite2
-
 [![Build, test and publish](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml/badge.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/LICENSE)
+[![Bundled SQLite](https://img.shields.io/badge/bundled_SQLite-2.8.17-blue.svg)](https://github.com/SkyCD/SkyCD.Native.Sqlite2/blob/main/native-source.json)
+[![NuGet build](https://img.shields.io/badge/NuGet-0.1.0-ci.2-blue.svg)](https://github.com/orgs/SkyCD/packages/nuget/package/SkyCD.Native.Sqlite2)
+
+# SkyCD.Native.Sqlite2
 
 Read-only .NET access to **legacy SQLite 2 databases**, using bundled native libraries. This is a small reusable library extracted from [SkyCD](https://github.com/SkyCD/SkyCD), where it imports old CDCollect catalogs. It does not contain CDCollect-specific schema or domain logic.
 
@@ -22,7 +25,7 @@ $env:NuGetPackageSourceCredentials_skycd = "Username=YOUR_GITHUB_USERNAME;Passwo
 dotnet add package SkyCD.Native.Sqlite2 --version YOUR_PUBLISHED_VERSION
 ```
 
-Use NuGet package source mapping so only `SkyCD.Native.Sqlite2` goes to `skycd`, while other packages use nuget.org. In GitHub Actions, grant the consuming repository read access under the package's **Manage Actions access**, set `permissions: packages: read`, and use its `GITHUB_TOKEN` as the feed credential.
+Use NuGet package source mapping so only `SkyCD.Native.Sqlite2*` goes to `skycd`, while other packages use nuget.org. In GitHub Actions, grant the consuming repository read access under the package's **Manage Actions access**, set `permissions: packages: read`, and use its `GITHUB_TOKEN` as the feed credential.
 
 ## Use the API
 
@@ -60,14 +63,14 @@ Both little- and big-endian SQLite 2 database files are covered by tests. NuGet 
 
 The wrapper opens a private snapshot, so the original file is never opened for writing. It runs the engine's integrity check before reading. A native authorizer denies writes, attach, and all pragmas except the integrity check. Stored executable-plugin configuration is ordinary data, not executed commands. Imported application-specific behavior remains the caller's responsibility.
 
-Limits are 256 MiB input, 16 MiB decoded records, 128 table columns, one million rows per query, 64 b-tree levels, UTF-8 text, and a native VM operation budget. Corruption or limit failures raise `Sqlite2Exception`; unsupported SQLite storage versions raise `Sqlite2UnsupportedFormatException`. Only SQLite 2 storage formats 2–4 are accepted. Encrypted databases and SQLite 3 files are not supported.
+Limits are 256 MiB input, 16 MiB decoded records, 128 table columns, one million rows per query, 64 b-tree levels, UTF-8 text, and a native VM operation budget. Corruption or limit failures raise `Sqlite2Exception`; unsupported SQLite storage versions raise `Sqlite2UnsupportedFormatException`. Only SQLite 2 storage formats 2ï¿½4 are accepted. Encrypted databases and SQLite 3 files are not supported.
 
 ## Build and test
 
-Install the .NET 10 SDK, PowerShell 7 and [Zig 0.15.2](https://ziglang.org/download/0.15.2/), then run:
+Install the .NET 10 SDK and [Zig 0.15.2](https://ziglang.org/download/0.15.2/), then run:
 
 ```powershell
-./scripts/build-native.ps1 -ZigExecutable /path/to/zig
+dotnet run --project tools/SkyCD.Native.Sqlite2.Build -- native-build --zig /path/to/zig
 dotnet restore SkyCD.Native.Sqlite2.slnx
 dotnet format SkyCD.Native.Sqlite2.slnx --verify-no-changes
 dotnet build SkyCD.Native.Sqlite2.slnx -c Release --no-restore
@@ -75,12 +78,26 @@ dotnet test SkyCD.Native.Sqlite2.slnx -c Release --no-build
 dotnet pack src/SkyCD.Native.Sqlite2 -c Release -o artifacts/nuget
 ```
 
-The build script downloads the official [SQLite 2.8.17 generated sources](https://www.sqlite.org/sqlite-source-2_8_17.zip) into a unique temporary directory, verifies SHA-256 `e718e71fec6ff3757a01c46ec505661a76843e5bbce0327d12497176ad5add49`, compiles the four runtimes, and deletes the temporary source directory. **The upstream source ZIP is neither committed nor included in the NuGet package or workflow artifacts.** Generated native binaries and manifests are also excluded from Git.
+The .NET local tool downloads the official [SQLite 2.8.17 generated sources](https://www.sqlite.org/sqlite-source-2_8_17.zip) into a unique temporary directory, verifies SHA-256 `e718e71fec6ff3757a01c46ec505661a76843e5bbce0327d12497176ad5add49`, compiles the four runtimes, and deletes the temporary source directory. **The upstream source ZIP is neither committed nor included in the NuGet package or workflow artifacts.** Generated native binaries and manifests are also excluded from Git.
 
-The engine remains pinned for reproducibility. The build applies explicit 64-bit pointer/modern MinGW compatibility changes and small native `initPage` guards for cyclic ancestors, depth overflow and cell-array bounds, demonstrated necessary by malformed-file tests. The build script contains the complete transformations. No GPL implementation is copied.
+The engine remains pinned for reproducibility. The build applies explicit 64-bit pointer/modern MinGW compatibility changes and small native `initPage` guards for cyclic ancestors, depth overflow and cell-array bounds, demonstrated necessary by malformed-file tests. The .NET tool contains the complete transformations. No GPL implementation is copied. Windows CRT section sentinels and its no-op DLL callback are supplied by this project under MIT, avoiding unmarked default startup units.
 
 CI builds the native assets, verifies formatting and package contents, and tests both the wrapper and the actual RID-published NuGet package on Windows, Linux, Intel macOS and ARM macOS. Publishing to GitHub Packages happens only for `main`, after every platform test passes, using the workflow's `GITHUB_TOKEN`. Pushes and manual runs generate new CI package versions automatically.
 
 ## License
 
-Standalone wrapper/build additions are MIT. Code and synthetic fixtures extracted from SkyCD retain their BSD-2-Clause notice. SQLite is public domain with its blessing; bundled runtime portions retain their permissive notices. The package declares `MIT AND BSD-2-Clause AND blessing AND ZPL-2.1` and ships the corresponding notices. See `LICENSE`, `src/SkyCD.Native.Sqlite2/native/licenses`, and `native-sbom.json`.
+The wrapper, build tools and synthetic fixtures are MIT licensed. SQLite is public domain with its blessing; bundled runtime portions retain their permissive notices. The package declares `MIT AND blessing` and ships the corresponding notices. The linked MinGW startup/runtime sources have explicit public-domain headers; the two default startup units without those headers are replaced by project-owned MIT definitions. No ZPL dependency is declared. See `LICENSE`, `src/SkyCD.Native.Sqlite2/native/licenses`, and `native-sbom.json`.
+
+## Local .NET build tool
+
+The helpers are a packaged .NET local tool, `SkyCD.Native.Sqlite2.Build`, from the same GitHub Packages feed. There are no PowerShell helper scripts in this repository. After configuring feed authentication, install the published tool into a local manifest:
+
+```sh
+dotnet new tool-manifest
+dotnet tool install SkyCD.Native.Sqlite2.Build --version 0.1.0-ci.2
+dotnet tool run sqlite2-build -- native-build --zig /path/to/zig
+dotnet tool run sqlite2-build -- verify-package --package artifacts/nuget/SkyCD.Native.Sqlite2.0.1.0-ci.2.nupkg
+dotnet tool run sqlite2-build -- check-licenses --sbom native-sbom.json --policy dependency-license-policy.json --report artifacts/license-report.json
+```
+
+Before the first package is installed, bootstrap any command with `dotnet run --project tools/SkyCD.Native.Sqlite2.Build -- <command>`. `smoke-package` restores and RID-publishes a real package consumer; `generate-readme` expands this document from `README.template.md`. Edit the template, not the generated README. On each main-branch push, CI fills the bundled SQLite and CI package versions, embeds the generated document in the packages, and commits it back after publication without starting a workflow loop. Automated commits include the requested coauthor trailer.
