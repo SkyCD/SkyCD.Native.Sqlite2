@@ -43,7 +43,7 @@ jobs:
           PUBLISH_RUN_ID: ${{ inputs.run-id }}
         run: |
           set -euo pipefail
-          [[ "$PACKAGE_VERSION" =~ ^0\.1\.0-ci\.[0-9]+$ ]]
+          [[ "$PACKAGE_VERSION" =~ ^0\.1\.[0-9]+\.[0-9]+$ ]]
           test "$UPDATE_BRANCH" = "automation/readme-${PACKAGE_VERSION}"
           number=$(gh pr list --head "$UPDATE_BRANCH" --base main --state open --json number --jq '.[0].number')
           pr=$(gh api "repos/$GH_REPO/pulls/$number")
@@ -52,13 +52,14 @@ jobs:
           jq -e 'length == 1 and .[0].filename == "README.md"' <<< "$files" > /dev/null
           sha=$(jq -r '.head.sha' <<< "$pr")
           # Verify byte-for-byte against the README artifact of the successful publishing run.
-          run_number="${PACKAGE_VERSION##*.}"
           [[ "$PUBLISH_RUN_ID" =~ ^[0-9]+$ ]]
           run=$(gh api "repos/$GH_REPO/actions/runs/$PUBLISH_RUN_ID")
-          jq -e --argjson number "$run_number" '.run_number == $number and .head_branch == "main" and .event != "pull_request" and .path == ".github/workflows/ci.yml"' <<< "$run" > /dev/null
+          jq -e '.head_branch == "main" and .event != "pull_request" and .path == ".github/workflows/ci.yml"' <<< "$run" > /dev/null
           jobs=$(gh api "repos/$GH_REPO/actions/runs/$PUBLISH_RUN_ID/jobs?per_page=100")
           jq -e '[.jobs[] | select(.name == "publish" or .name == "Required checks") | .conclusion] == ["success", "success"]' <<< "$jobs" > /dev/null
           gh run download "$PUBLISH_RUN_ID" --name generated-readme --dir expected
+          gh run download "$PUBLISH_RUN_ID" --name nuget-package --dir package
+          dotnet run --project tools/SkyCD.Native.Sqlite2.Build -c Release -- verify-package --package "package/SkyCD.Native.Sqlite2.${PACKAGE_VERSION}.nupkg" --version "$PACKAGE_VERSION"
           gh api "repos/$GH_REPO/contents/README.md?ref=$sha" --jq .content | base64 --decode > actual.md
           cmp expected/README.md actual.md
           # Attach the required result to the PR's commit, rather than the dispatch's main commit.
